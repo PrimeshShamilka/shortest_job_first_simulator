@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>  
+    <title>SGFSimulator</title>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="index.css" />
+</head>
+  
+<body>
+
+    <header class="page-header">
+            <h1>Shortest Job First Simulator</h1>
+    </header>
+
+    
+    <div class="form-group-2">
+            <label>
+                Select to preemptive SJF simulations  :
+            </label>
+
+            <!-- Rounded switch -->
+            <label class="switch">
+                <input type="checkbox" id="toggle">
+                <span class="slider round"></span>
+            </label>
+    </div>
+
+
+    <div class="container-1">
+            <form class="input-form">
+                <div class="form-group">
+                    <label>Process ID: </label>
+                    <input type="number" id="PID" name="PID" value="">
+                </div>
+                <div class="form-group">
+                    <label>Burst Time: </label>
+                    <input type="number" id="burstTime" value="">
+                </div>
+                <div class="form-group">
+                    <label>Arrival Time: </label>
+                    <input type="number" id="arrivalTime" value="">
+                </div>
+                <div class="form-group">
+                    <button class="button" type="button" onclick="createTable()">Enter values</button>
+                </div>
+
+                <div class="form-group">
+                    <button class="button" type="button" onclick="printGanttChart()">Show Gantt Chart</button>
+                </div>  
+        </form>
+    </div>
+    </div>  
+
+
+    <div class="container">
+        <table id="inputTable">
+            <tr>
+                <th>PID</th>
+                <th>Burst Time</th>
+                <th>Arrival Time</th>
+            </tr>
+        </table>
+    </div>
+
+       
+    
+
+    
+
+    <section class="container-3">
+        <script src="https://www.amcharts.com/lib/3/amcharts.js"></script>
+        <script src="https://www.amcharts.com/lib/3/serial.js"></script>
+        <script src="https://www.amcharts.com/lib/3/gantt.js"></script>
+        <script src="https://www.amcharts.com/lib/3/themes/dark.js"></script>
+        <script src="https://www.amcharts.com/lib/3/plugins/export/export.min.js"></script>
+        <link rel="stylesheet" href="https://www.amcharts.com/lib/3/plugins/export/export.css" type="text/css" media="all" />
+        <div id="chartdiv"></div>   
+
+        <script type="text/javascript">
+        //"use strict";   //enabling the strict mode in js
+
+        function createTable()
+        {
+            var processID=document.getElementById("PID").value;
+            var burstTime=document.getElementById("burstTime").value;
+            var arrivalTime=document.getElementById("arrivalTime").value;
+
+            var table=document.getElementById("inputTable");
+            var firstRow = table.insertRow(-1);
+            var cell1 = firstRow.insertCell(0);
+            var cell2 = firstRow.insertCell(1);
+            var cell3 = firstRow.insertCell(2);
+
+            cell1.innerHTML=processID;
+            cell2.innerHTML=burstTime;
+            cell3.innerHTML=arrivalTime;
+
+            var x = document.getElementById("inputTable").rows.length;
+           // console.log(x);
+        }
+
+
+        function GetCellValues()
+         {
+            var pid =[];
+            var at =[];
+            var bt =[];
+            var flag =[];
+            var bt2=[];
+
+            // items is the sorted list
+            var items = [];
+
+            var table = document.getElementById('inputTable');
+            for (var r = 1, n = table.rows.length; r < n; r++) {
+                for (var c = 0, m = table.rows[r].cells.length; c < m; c++) {
+                     //console.log(table.rows[r].cells[c].innerHTML);
+                }
+                pid.push(parseInt(table.rows[r].cells[0].innerHTML));
+                bt.push(parseInt(table.rows[r].cells[1].innerHTML));
+                bt2.push(parseInt(table.rows[r].cells[1].innerHTML));
+                at.push(parseInt(table.rows[r].cells[2].innerHTML));
+                flag.push(0);
+            }
+            
+            var toggle = document.getElementById("toggle").checked;
+            
+            if (toggle == true)
+                items = preemptiveSelection(pid,at,bt,flag,bt2);
+            else
+                items = nonPreemptiveSelection(pid,at,bt,flag);
+            
+            return items;
+
+          }
+
+
+          function nonPreemptiveSelection(pid,at,bt,flag)
+          {
+            var n = pid.length;
+            var clock = 0;
+            var tot = 0;
+            var items =[];
+            var ct=[];
+            var ta=[];
+            var wt=[];
+            var avgwt=0;
+            var avgta=0;
+            
+
+            while(true)
+            {
+                var min=100;
+                var c = n; // c represents the current PID
+                if (tot == n) // total no of process = completed process loop will be terminated
+                    break;
+                
+                for (var i=0; i< n; i++)
+                {
+                    /*
+                     * If i'th process arrival time <= system time and its flag=0 and burst<min 
+                     * That process will be executed first 
+                     */ 
+                    var count=0;
+                    if ((at[i] <= clock) && (flag[i] == 0) && (bt[i]<min))
+                        {
+                            min=bt[i];
+                            c=i;
+                        } 
+
+                }
+                /* If c==n means c value can not updated because no process arrival time< system time so we increase the system time */
+                if (c==n) 
+                    clock++;
+                else
+                {
+                    var temp = [];
+                    temp.push(pid[c]);
+                    temp.push(bt[c]);
+                    items.push(temp);
+
+                    ct[c]=clock+bt[c];
+                    ta[c]=ct[c]-at[c];
+                    wt[c]=ta[c]-bt[c];
+                    
+                    clock+=bt[c];
+                    flag[c]=1;
+                    tot++;   
+                }
+            }
+
+            for(i=0;i<n;i++)
+            {
+                avgwt +=wt[i];
+                avgta +=ta[i];
+            }
+
+            avgwt/=n;
+            avgta/=n;
+            printStat(ct,ta,wt,avgwt,avgta,pid); 
+            return items;
+          }
+
+
+          function preemptiveSelection(pid,at,bt,flag,bt2)
+          {
+            var n = pid.length;
+            var clock = 0;
+            var tot = 0;
+            var items =[];
+            var ct=[];
+            var ta=[];
+            var wt=[];
+            var avgwt=0;
+            var avgta=0;
+            
+            var count2=0;
+
+            while (true)
+            {
+                var c = n;
+                var min =100;
+                if (tot==n)
+                {
+                    items.push(temp);
+                    break;
+                }
+                    
+                for (var i=0; i< n; i++)
+                {
+                    /*
+                     * If i'th process arrival time <= system time and its flag=0 and burst<min 
+                     * That process will be executed first 
+                     */ 
+                    var count=0;
+                    if ((at[i] <= clock) && (flag[i] == 0) && (bt[i]<min))
+                        {
+                            min=bt[i];
+                            c=i;
+                        } 
+
+                }
+                
+                // If there's no c:
+                if (c==n)
+                {
+                    clock+=1;
+                }
+                // If there's a c:
+                else
+                {
+                    bt[c]--;
+                    clock++;
+                    if (bt[c]==0)
+                    {   
+                        ct[c]=clock;
+                        flag[c]=1
+                        tot++;
+                    }
+
+                    if (count2==0)
+                    {
+                        //temp2 holds the previous c
+                        var temp2=c;
+                        var temp = [];
+                        temp.push(pid[c]);
+                        temp.push(1)
+                    }
+
+                    else
+                    {
+                         if (c==temp2)
+                        {
+                            temp[1]++;
+                        }
+                        else
+                        {
+                            items.push(temp);
+                            var temp =[];
+                            temp.push(pid[c]);
+                            temp.push(1);
+                            temp2=c;
+                        }
+                    }
+                    console.log(c); 
+                    count2++;
+                }
+                   
+            }
+
+            for(i=0;i<n;i++)
+            {
+                ta[i] = ct[i] - at[i];
+                wt[i] = ta[i] - bt2[i];
+                avgwt +=wt[i];
+                avgta +=ta[i];
+            }
+
+            avgwt/=n;
+            avgta/=n;
+
+            printStat(ct,ta,wt,avgwt,avgta,pid);            
+            return items;
+                
+        }
+
+
+        function generateGanttChartData(data)
+        {   
+            // Data contains the processes in the required order
+            var n = data.length;
+            var finalData = [];
+            var clock = 0;
+            
+            //console.log(n);
+
+            for (var i=0; i<n; i++)
+            {
+                var temp = {
+                        "category": "",
+                        "segments": [ {
+                            "start": 0,
+                            "duration": 0,
+                            "color": "#727d6f",
+                            "task": ""
+                        }, ]
+                    }
+
+                temp.category = "Process " + (parseInt(data[i][0])).toString();
+                temp.segments[0].start = clock;
+                temp.segments[0].duration = data[i][1];
+                temp.segments[0].task = "Process " + (parseInt(data[i][0])).toString();
+
+                clock = clock + data[i][1];
+                finalData.push(temp);
+            }
+             
+            return finalData;
+        }
+
+
+
+        function printGanttChart()
+        {
+            //chartData contains data for dataProvider KEY
+            var chartData = generateGanttChartData(GetCellValues());
+            
+
+            var chart = AmCharts.makeChart( "chartdiv", 
+                {
+                "type": "gantt",
+                "theme": "dark",
+                "marginRight": 70,
+                "period": "hh:mm:ss",
+                "dataDateFormat":"YYYY-MM-DD",
+                "balloonDateFormat": "JJ:NN",
+                "columnWidth": 0.5,
+                "valueAxis": {
+                    "type": "timecode"
+                },
+                "brightnessStep": 10,
+                "graph": {
+                    "fillAlphas": 1,
+                    "balloonText": "<b>[[task]]</b>: [[open]] [[value]]"
+                },
+                "rotate": true,
+                "categoryField": "category",
+                "segmentsField": "segments",
+                "colorField": "color",
+                "startDate": "00:00:00:00",
+                "startField": "start",
+                "endField": "end",
+                "durationField": "duration",
+
+
+                // This key contains values generated by generateGanttChartData FUNCTION
+                "dataProvider": chartData,
+
+
+                "valueScrollbar": {
+                    "autoGridCount":true
+                },
+                "chartCursor": {
+                    "cursorColor":"#55bb76",
+                    "valueBalloonsEnabled": false,
+                    "cursorAlpha": 0,
+                    "valueLineAlpha":0.5,
+                    "valueLineBalloonEnabled": true,
+                    "valueLineEnabled": true,
+                    "zoomable":false,
+                    "valueZoomable":true
+                },
+                "export": {
+                    "enabled": true
+                 }
+            } );
+        }
+
+
+        function printStat(ct,ta,wt,avgwt,avgta,pid)
+        {
+            console.log(ct);
+            console.log(ta);
+            console.log(wt);
+            console.log(avgwt);
+            console.log(avgta);
+            
+            document.getElementById("wtOutput").innerHTML=avgwt;
+            document.getElementById("taOutput").innerHTML=avgta;
+            
+            var table_2=document.getElementById("statTable");
+        
+            for(var i = table_2. rows. length - 1; i > 1; i--)
+            {
+                    table_2. deleteRow(i);
+            }
+
+            for (var i=0;i<pid.length;i++)
+            {   
+            var firstRow = table_2.insertRow(i+1);
+            var cell1 = firstRow.insertCell(0);
+            var cell2 = firstRow.insertCell(1);
+            var cell3 = firstRow.insertCell(2);
+            var cell4 = firstRow.insertCell(3);
+                cell1.innerHTML=pid[i];
+                cell2.innerHTML=ct[i];
+                cell3.innerHTML=ta[i];
+                cell4.innerHTML=wt[i];
+            }
+            
+        }
+
+        
+        </script>   
+    </section>
+
+    <div>
+        <table id="statTable">
+            <tr>
+                <th>PID</th>
+                <th>Complete Time</th>
+                <th>Turnaround Time</th>
+                <th>Waiting Time</th>
+            </tr>
+        </table>
+    </div>
+
+    <div id="statTable-s">
+            <div class="block">
+                <label>Average waiting time: </label>
+                <label id="wtOutput"></label>
+            </div>
+
+            <div class="block">
+                <label>Average turnaround time: </label>
+                <label id="taOutput"></label>
+             </div>
+        
+        </div>
+
+
+</body>
+</html>
