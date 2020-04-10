@@ -1,4 +1,4 @@
-# Shortest Job First Scheduling Algorithm Simulator by Primesh Pathirana.
+## Shortest Job First Scheduling Algorithm Simulator by Primesh Pathirana
 
  Both Preemptive and Non-Preemptive SJF algorithms can be simulated. 
 
