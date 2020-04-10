@@ -5,7 +5,7 @@
 ## Adding a process
 ![](https://github.com/PrimeshShamilka/Shortest-job-first-simulator/blob/resources/s1.png)
 ## Gantt chart
-![](https://github.com/PrimeshShamilka/Shortest-job-first-simulator/blob/resourrces/s2.png)
+![](https://github.com/PrimeshShamilka/Shortest-job-first-simulator/blob/resources/s2.png)
 ## Viewing Results
 ![](https://github.com/PrimeshShamilka/Shortest-job-first-simulator/blob/resources/s3.png)
 
